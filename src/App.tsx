@@ -1,23 +1,45 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useEffect } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Navigation from './components/Navigation';
-import HomePage from './pages/HomePage';
-import TrackingPage from './pages/TrackingPage';
-import RegisterPage from './pages/RegisterPage';
-import AboutPage from './pages/AboutPage';
-import './App.css';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useEffect } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Navigation from "./components/Navigation";
+import HomePage from "./pages/HomePage";
+import TrackingPage from "./pages/TrackingPage";
+import RegisterPage from "./pages/RegisterPage";
+import AboutPage from "./pages/AboutPage";
+import AdminLayout from "./components/AdminLayout";
+import AdminLoginPage from "./pages/admin/AdminLoginPage";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminDeliveriesPage from "./pages/admin/AdminDeliveriesPage";
+import "./App.css";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminPackagesPage from "./pages/admin/AdminPackagesPage";
+import AdminCreatePackageDeliveryPage from "./pages/admin/AdminCreatePackageDeliveryPage";
 
 gsap.registerPlugin(ScrollTrigger);
+
+// Protected route component
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = localStorage.getItem("adminToken");
+  return isAuthenticated ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/admin/login" replace />
+  );
+}
 
 function App() {
   useEffect(() => {
     // Refresh ScrollTrigger on route change
     ScrollTrigger.refresh();
-    
+
     return () => {
-      ScrollTrigger.getAll().forEach(st => st.kill());
+      ScrollTrigger.getAll().forEach((st) => st.kill());
     };
   }, []);
 
@@ -25,12 +47,41 @@ function App() {
     <Router>
       <div className="relative">
         <div className="grain-overlay" />
-        <Navigation />
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/tracking" element={<TrackingPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/about" element={<AboutPage />} />
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="deliveries" element={<AdminDeliveriesPage />} />
+            <Route path="packages" element={<AdminPackagesPage />} />
+            <Route
+              path="create-package-delivery"
+              element={<AdminCreatePackageDeliveryPage />}
+            />
+          </Route>
+
+          {/* Public Routes */}
+          <Route
+            element={
+              <>
+                <Navigation />
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/tracking" element={<TrackingPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                </Routes>
+              </>
+            }
+          />
         </Routes>
       </div>
     </Router>
