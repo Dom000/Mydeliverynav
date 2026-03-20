@@ -527,14 +527,15 @@ export default function AdminCreatePackageDeliveryPage() {
                       center={point.coords}
                       radius={index === activePointIndex ? 8 : 6}
                       pathOptions={{
-                        color: index === activePointIndex ? "#10b981" : "#ef4444",
+                        color:
+                          index === activePointIndex ? "#10b981" : "#ef4444",
                         fillColor:
                           index === activePointIndex ? "#10b981" : "#ef4444",
                         fillOpacity: 0.9,
                       }}
                     >
                       <Tooltip direction="top" offset={[0, -8]}>
-                        {point.label} [{point.coords[0].toFixed(4)}, {" "}
+                        {point.label} [{point.coords[0].toFixed(4)},{" "}
                         {point.coords[1].toFixed(4)}]
                       </Tooltip>
                     </CircleMarker>
