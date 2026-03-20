@@ -3,6 +3,7 @@ import {
   Routes,
   Route,
   Navigate,
+  Outlet,
 } from "react-router-dom";
 import { useEffect } from "react";
 import { gsap } from "gsap";
@@ -30,6 +31,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     <>{children}</>
   ) : (
     <Navigate to="/admin/login" replace />
+  );
+}
+
+function PublicLayout() {
+  return (
+    <>
+      <Navigation />
+      <Outlet />
+    </>
   );
 }
 
@@ -69,19 +79,12 @@ function App() {
           </Route>
 
           {/* Public Routes */}
-          <Route
-            element={
-              <>
-                <Navigation />
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/tracking" element={<TrackingPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                </Routes>
-              </>
-            }
-          />
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/tracking" element={<TrackingPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/about" element={<AboutPage />} />
+          </Route>
         </Routes>
       </div>
     </Router>
