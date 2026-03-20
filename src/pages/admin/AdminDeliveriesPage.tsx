@@ -183,7 +183,9 @@ export default function AdminDeliveriesPage() {
                           <select
                             value={draftStatus}
                             onChange={(event) =>
-                              setDraftStatus(event.target.value as PackageStatus)
+                              setDraftStatus(
+                                event.target.value as PackageStatus,
+                              )
                             }
                             className="h-8 rounded-md border border-slate-700 bg-slate-800 px-2 text-xs text-white"
                           >
