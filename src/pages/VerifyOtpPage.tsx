@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useVerifyOtpMutation } from "@/apis/auth";
 
 export default function VerifyOtpPage() {
   const navigate = useNavigate();
@@ -11,35 +12,42 @@ export default function VerifyOtpPage() {
 
   const decodedEmail = useMemo(() => decodeURIComponent(email), [email]);
   const [otp, setOtp] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const verifyOtpMutation = useVerifyOtpMutation();
 
-  const handleValidateOtp = (event: React.FormEvent) => {
+  const handleValidateOtp = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
 
     const pendingEmail = localStorage.getItem("pendingOtpEmail");
-    const pendingOtp = localStorage.getItem("pendingOtpCode");
 
     if (!decodedEmail || pendingEmail !== decodedEmail) {
       setError("OTP session expired. Please request a new OTP.");
       return;
     }
 
-    if (otp.trim() !== pendingOtp) {
-      setError("Invalid OTP. Please try again.");
+    if (!otp.trim() || otp.trim().length !== 6) {
+      setError("Please enter a valid 6-digit OTP.");
       return;
     }
 
-    setIsSubmitting(true);
+    try {
+      await verifyOtpMutation.mutateAsync({
+        email: decodedEmail,
+        code: otp.trim(),
+      });
 
-    window.setTimeout(() => {
-      localStorage.removeItem("pendingOtpCode");
-      localStorage.setItem("userToken", "demo-user-token");
+      localStorage.removeItem("pendingOtpEmail");
+      localStorage.setItem("userToken", "authenticated");
       localStorage.setItem("userEmail", decodedEmail);
       navigate("/user/packages");
-      setIsSubmitting(false);
-    }, 400);
+    } catch (mutationError) {
+      const message =
+        mutationError instanceof Error
+          ? mutationError.message
+          : "Invalid OTP. Please try again.";
+      setError(message);
+    }
   };
 
   return (
@@ -77,10 +85,10 @@ export default function VerifyOtpPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={verifyOtpMutation.isPending}
               className="w-full bg-red-600 hover:bg-red-700 text-white"
             >
-              {isSubmitting ? "Validating..." : "Validate OTP"}
+              {verifyOtpMutation.isPending ? "Validating..." : "Validate OTP"}
             </Button>
           </form>
         </CardContent>

@@ -4,32 +4,36 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useSendOtpMutation } from "@/apis/auth";
 
 export default function SignInPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const sendOtpMutation = useSendOtpMutation();
 
-  const handleRequestOtp = (event: React.FormEvent) => {
+  const handleRequestOtp = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
 
-    if (!email.trim()) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
       setError("Email is required");
       return;
     }
 
-    setIsSubmitting(true);
-
-    window.setTimeout(() => {
-      localStorage.setItem("pendingOtpEmail", email.trim().toLowerCase());
-      localStorage.setItem("pendingOtpCode", "123456");
-      navigate(
-        `/signin/verify/${encodeURIComponent(email.trim().toLowerCase())}`,
-      );
-      setIsSubmitting(false);
-    }, 400);
+    try {
+      await sendOtpMutation.mutateAsync({ email: normalizedEmail });
+      localStorage.setItem("pendingOtpEmail", normalizedEmail);
+      navigate(`/signin/verify/${encodeURIComponent(normalizedEmail)}`);
+    } catch (mutationError) {
+      const message =
+        mutationError instanceof Error
+          ? mutationError.message
+          : "Failed to send OTP. Please try again.";
+      setError(message);
+    }
   };
 
   return (
@@ -63,16 +67,11 @@ export default function SignInPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={sendOtpMutation.isPending}
               className="w-full bg-red-600 hover:bg-red-700 text-white"
             >
-              {isSubmitting ? "Requesting OTP..." : "Request OTP"}
+              {sendOtpMutation.isPending ? "Requesting OTP..." : "Request OTP"}
             </Button>
-
-            <p className="text-xs text-slate-500">
-              Demo OTP is{" "}
-              <span className="font-semibold text-slate-300">123456</span>
-            </p>
           </form>
         </CardContent>
       </Card>

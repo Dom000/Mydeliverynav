@@ -12,35 +12,39 @@ import {
 } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAdminLoginMutation } from "@/apis/auth";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const adminLoginMutation = useAdminLoginMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
-    setLoading(true);
 
-    // Simulate API call - replace with actual authentication
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter both email and password");
+      return;
+    }
+
     try {
-      setTimeout(() => {
-        if (email && password) {
-          // Store auth token in localStorage (replace with real auth)
-          localStorage.setItem("adminToken", "demo-token");
-          localStorage.setItem("adminEmail", email);
-          navigate("/admin/dashboard");
-        } else {
-          setError("Please enter both email and password");
-        }
-        setLoading(false);
-      }, 500);
-    } catch (err) {
-      setError("Authentication failed. Please try again.");
-      setLoading(false);
+      await adminLoginMutation.mutateAsync({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      localStorage.setItem("adminToken", "authenticated");
+      localStorage.setItem("adminEmail", email.trim().toLowerCase());
+      navigate("/admin/dashboard");
+    } catch (loginError) {
+      const message =
+        loginError instanceof Error
+          ? loginError.message
+          : "Authentication failed. Please try again.";
+      setError(message);
     }
   };
 
@@ -75,9 +79,9 @@ export default function AdminLoginPage() {
                 type="email"
                 placeholder="admin@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-red-500"
-                disabled={loading}
+                disabled={adminLoginMutation.isPending}
               />
             </div>
 
@@ -90,23 +94,19 @@ export default function AdminLoginPage() {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-red-500"
-                disabled={loading}
+                disabled={adminLoginMutation.isPending}
               />
             </div>
 
             <Button
               type="submit"
               className="w-full bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base"
-              disabled={loading}
+              disabled={adminLoginMutation.isPending}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {adminLoginMutation.isPending ? "Signing in..." : "Sign In"}
             </Button>
-
-            <p className="text-center text-xs sm:text-sm text-slate-400">
-              Demo credentials: any email & password
-            </p>
           </form>
         </CardContent>
       </Card>
