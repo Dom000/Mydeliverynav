@@ -20,13 +20,14 @@ type RoutePoint = {
   label: string;
   coords: LatLngTuple;
   durationToNext?: number;
+  nextArrivalAt?: string;
 };
 
 type PackagePayload = {
   name: string;
   weight: number;
   content: string;
-  images: string[];
+  images: File[];
   ownerEmail: string;
   description: string;
   status: "PENDING" | "IN_TRANSIT" | "DELIVERED";
@@ -95,13 +96,59 @@ function estimateDistanceKm(points: RoutePoint[]) {
   return Number(total.toFixed(2));
 }
 
+function toDateTimeLocalValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function toAmPmLabel(dateTimeValue?: string) {
+  if (!dateTimeValue) return "";
+  const parsed = new Date(dateTimeValue);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(parsed);
+}
+
+function initialRoutePoints(): RoutePoint[] {
+  const now = Date.now();
+  let cumulativeSeconds = 0;
+
+  const basePoints: RoutePoint[] = [
+    { label: "Start", coords: [40.7128, -74.006], durationToNext: 0 },
+    { label: "Hub", coords: [40.7167, -74.0036], durationToNext: 300 },
+    { label: "Corner", coords: [40.7201, -74.0009], durationToNext: 420 },
+    { label: "Door", coords: [40.7237, -73.9982] },
+  ];
+
+  return basePoints.map((point, index) => {
+    if (index >= basePoints.length - 1) return point;
+
+    cumulativeSeconds += Number(point.durationToNext ?? 0);
+    return {
+      ...point,
+      nextArrivalAt: toDateTimeLocalValue(
+        new Date(now + cumulativeSeconds * 1000),
+      ),
+    };
+  });
+}
+
 export default function AdminCreatePackageDeliveryPage() {
   const [name, setName] = useState("Books - Order #1234");
   const [weight, setWeight] = useState<number>(1.2);
   const [content, setContent] = useState("Assorted paperback books");
-  const [imagesText, setImagesText] = useState(
-    "https://cdn.example.com/imgs/books1.jpg",
-  );
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [ownerEmail, setOwnerEmail] = useState("reader@example.com");
   const [description, setDescription] = useState(
     "Leave at doorstep if no answer",
@@ -109,12 +156,9 @@ export default function AdminCreatePackageDeliveryPage() {
   const [status, setStatus] = useState<PackagePayload["status"]>("PENDING");
   const [origin, setOrigin] = useState("Book Depot");
   const [destination, setDestination] = useState("Customer Home");
-  const [points, setPoints] = useState<RoutePoint[]>([
-    { label: "Start", coords: [40.7128, -74.006], durationToNext: 0 },
-    { label: "Hub", coords: [40.7167, -74.0036], durationToNext: 300 },
-    { label: "Corner", coords: [40.7201, -74.0009], durationToNext: 420 },
-    { label: "Door", coords: [40.7237, -73.9982] },
-  ]);
+  const [points, setPoints] = useState<RoutePoint[]>(() =>
+    initialRoutePoints(),
+  );
 
   const [isSimulating, setIsSimulating] = useState(false);
   const [activePointIndex, setActivePointIndex] = useState(0);
@@ -123,15 +167,24 @@ export default function AdminCreatePackageDeliveryPage() {
   const distance = useMemo(() => estimateDistanceKm(points), [points]);
   const polylinePositions = points.map((point) => point.coords);
 
+  const imagePreviewUrls = useMemo(
+    () => imageFiles.map((file) => URL.createObjectURL(file)),
+    [imageFiles],
+  );
+
+  useEffect(
+    () => () => {
+      imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    },
+    [imagePreviewUrls],
+  );
+
   const payload: PackagePayload = useMemo(
     () => ({
       name,
       weight,
       content,
-      images: imagesText
-        .split("\n")
-        .map((item) => item.trim())
-        .filter(Boolean),
+      images: imageFiles,
       ownerEmail,
       description,
       status,
@@ -155,7 +208,7 @@ export default function AdminCreatePackageDeliveryPage() {
       name,
       weight,
       content,
-      imagesText,
+      imageFiles,
       ownerEmail,
       description,
       status,
@@ -164,6 +217,18 @@ export default function AdminCreatePackageDeliveryPage() {
       distance,
       points,
     ],
+  );
+
+  const payloadPreview = useMemo(
+    () => ({
+      ...payload,
+      images: payload.images.map((file) => ({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      })),
+    }),
+    [payload],
   );
 
   useEffect(() => {
@@ -195,6 +260,7 @@ export default function AdminCreatePackageDeliveryPage() {
           label: `Point ${nextIndex}`,
           coords,
           durationToNext: 60,
+          nextArrivalAt: toDateTimeLocalValue(new Date(Date.now() + 60 * 1000)),
         },
       ];
     });
@@ -202,7 +268,7 @@ export default function AdminCreatePackageDeliveryPage() {
 
   const handlePointChange = (
     index: number,
-    key: "label" | "durationToNext",
+    key: "label" | "durationToNext" | "nextArrivalAt",
     value: string,
   ) => {
     setPoints((previous) =>
@@ -210,6 +276,18 @@ export default function AdminCreatePackageDeliveryPage() {
         if (pointIndex !== index) return point;
         if (key === "label") {
           return { ...point, label: value };
+        }
+        if (key === "nextArrivalAt") {
+          const selectedTime = new Date(value).getTime();
+          const durationToNext = Number.isNaN(selectedTime)
+            ? 0
+            : Math.max(0, Math.round((selectedTime - Date.now()) / 1000));
+
+          return {
+            ...point,
+            nextArrivalAt: value,
+            durationToNext,
+          };
         }
         return {
           ...point,
@@ -238,10 +316,38 @@ export default function AdminCreatePackageDeliveryPage() {
     setIsSimulating(false);
   };
 
+  const handleImagesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    setImageFiles(files);
+  };
+
+  const removeImage = (index: number) => {
+    setImageFiles((previous) =>
+      previous.filter((_, imageIndex) => imageIndex !== index),
+    );
+  };
+
   const handleSubmit = () => {
+    const formData = new FormData();
+    formData.append("name", payload.name);
+    formData.append("weight", String(payload.weight));
+    formData.append("content", payload.content);
+    formData.append("ownerEmail", payload.ownerEmail);
+    formData.append("description", payload.description);
+    formData.append("status", payload.status);
+    formData.append("route", JSON.stringify(payload.route));
+
+    payload.images.forEach((file) => {
+      formData.append("images", file);
+    });
+
     console.log("Create package payload", payload);
+    console.log("Create package payload preview", payloadPreview);
+    console.log("FormData ready with image files", {
+      imageCount: payload.images.length,
+    });
     alert(
-      "Package + delivery route payload ready. Check console for JSON output.",
+      "Package + delivery route payload ready with image files. Check console output.",
     );
   };
 
@@ -342,14 +448,53 @@ export default function AdminCreatePackageDeliveryPage() {
 
             <div className="space-y-2">
               <Label htmlFor="images" className="text-slate-300">
-                Image URLs (one per line)
+                Package Images
               </Label>
-              <Textarea
+              <Input
                 id="images"
-                value={imagesText}
-                onChange={(event) => setImagesText(event.target.value)}
-                className="bg-slate-800 border-slate-700 text-white min-h-[90px]"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImagesChange}
+                className="bg-slate-800 border-slate-700 text-white file:mr-3 file:rounded-md file:border-0 file:bg-slate-700 file:px-3 file:py-1.5 file:text-xs sm:file:text-sm file:text-white hover:file:bg-slate-600"
               />
+              <p className="text-xs text-slate-400">
+                Select one or more image files. These files are sent directly to
+                the backend as multipart form data.
+              </p>
+              {imagePreviewUrls.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                  {imagePreviewUrls.map((url, index) => (
+                    <div
+                      key={`${url}-${index}`}
+                      className="rounded-md border border-slate-700 bg-slate-800 p-2 space-y-2"
+                    >
+                      <div className="overflow-hidden rounded-md border border-slate-700">
+                        <img
+                          src={url}
+                          alt={imageFiles[index]?.name || `Image ${index + 1}`}
+                          className="h-20 sm:h-24 w-full object-cover"
+                        />
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-slate-300 truncate">
+                        {imageFiles[index]?.name}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => removeImage(index)}
+                        className="w-full border-slate-700 text-slate-300 hover:bg-slate-700 h-8"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">
+                  No images selected yet.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -590,23 +735,35 @@ export default function AdminCreatePackageDeliveryPage() {
 
                   <div className="lg:col-span-3 space-y-1">
                     <Label className="text-slate-300">
-                      Duration to Next (sec)
+                      Arrive at Next Point
                     </Label>
                     <Input
-                      type="number"
-                      min="0"
+                      type="datetime-local"
                       disabled={isLast}
-                      value={isLast ? "" : Number(point.durationToNext ?? 0)}
+                      value={isLast ? "" : (point.nextArrivalAt ?? "")}
                       onChange={(event) =>
                         handlePointChange(
                           index,
-                          "durationToNext",
+                          "nextArrivalAt",
                           event.target.value,
                         )
                       }
                       className="bg-slate-800 border-slate-700 text-white disabled:opacity-50"
-                      placeholder={isLast ? "Last point" : "e.g. 300"}
+                      placeholder={isLast ? "Last point" : "Pick date & time"}
                     />
+                    {!isLast && (
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] text-slate-300">
+                          {point.nextArrivalAt
+                            ? `Selected time: ${toAmPmLabel(point.nextArrivalAt)}`
+                            : "Selected time: --"}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Auto-converted to {Number(point.durationToNext ?? 0)}{" "}
+                          sec for backend processing.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="lg:col-span-2">
@@ -664,7 +821,7 @@ export default function AdminCreatePackageDeliveryPage() {
         </CardHeader>
         <CardContent>
           <pre className="text-xs sm:text-sm text-slate-200 bg-slate-950 border border-slate-700 rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-words">
-            {JSON.stringify(payload, null, 2)}
+            {JSON.stringify(payloadPreview, null, 2)}
           </pre>
         </CardContent>
       </Card>

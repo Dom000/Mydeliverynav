@@ -26,6 +26,38 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const trackingAnimationStyles = `
+  @keyframes ping-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(213, 61, 61, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 20px rgba(213, 61, 61, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(213, 61, 61, 0);
+    }
+  }
+
+  @keyframes flowing-route {
+    0% {
+      stroke-dashoffset: 0;
+    }
+    100% {
+      stroke-dashoffset: -18;
+    }
+  }
+
+  .animated-route-line {
+    animation: flowing-route 2s linear infinite;
+    stroke-dasharray: 10 8;
+  }
+
+  .ping-marker {
+    animation: ping-pulse 2s infinite;
+  }
+`;
+
 type TrackingRecord = {
   status: string;
   origin: string;
@@ -178,6 +210,8 @@ const TrackingPage = () => {
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [isFullscreenPanelCollapsed, setIsFullscreenPanelCollapsed] =
+    useState(false);
   const [error, setError] = useState("");
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -188,6 +222,11 @@ const TrackingPage = () => {
       { y: 30, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" },
     );
+
+    // Add tracking animation styles
+    const styleTag = document.createElement("style");
+    styleTag.innerHTML = trackingAnimationStyles;
+    document.head.appendChild(styleTag);
 
     // If tracking number in URL, search automatically
     const urlNumber = searchParams.get("number");
@@ -291,6 +330,12 @@ const TrackingPage = () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
+  }, [isMapFullscreen]);
+
+  useEffect(() => {
+    if (!isMapFullscreen) return;
+    const isMobileViewport = window.innerWidth < 640;
+    setIsFullscreenPanelCollapsed(isMobileViewport);
   }, [isMapFullscreen]);
 
   const handleTrack = (number: string = trackingNumber) => {
@@ -542,11 +587,23 @@ const TrackingPage = () => {
                         {mapPoints.length > 1 && (
                           <Polyline
                             positions={mapPoints}
+                            eventHandlers={{
+                              add: (event: any) => {
+                                const path = event.target._path;
+                                if (path) {
+                                  setTimeout(() => {
+                                    path.classList.add("animated-route-line");
+                                  }, 50);
+                                }
+                              },
+                            }}
                             pathOptions={{
                               color: "#D53D3D",
                               weight: 4,
                               opacity: 0.9,
                               dashArray: "10 8",
+                              lineCap: "round" as const,
+                              lineJoin: "round" as const,
                             }}
                           />
                         )}
@@ -574,27 +631,50 @@ const TrackingPage = () => {
 
                         {currentCoordinate &&
                           trackingData.status === "In Transit" && (
-                            <CircleMarker
-                              center={[
-                                currentCoordinate.lat,
-                                currentCoordinate.lng,
-                              ]}
-                              radius={10}
-                              pathOptions={{
-                                color: "#D53D3D",
-                                fillColor: "#D53D3D",
-                                fillOpacity: 0.4,
-                                weight: 2,
-                              }}
-                            >
-                              <Tooltip
-                                direction="top"
-                                offset={[0, -8]}
-                                permanent
+                            <>
+                              <CircleMarker
+                                center={[
+                                  currentCoordinate.lat,
+                                  currentCoordinate.lng,
+                                ]}
+                                radius={10}
+                                pathOptions={{
+                                  color: "#D53D3D",
+                                  fillColor: "#D53D3D",
+                                  fillOpacity: 0.4,
+                                  weight: 0,
+                                }}
+                                eventHandlers={{
+                                  add: (event: any) => {
+                                    const circle = event.target._path;
+                                    if (circle) {
+                                      circle.classList.add("ping-marker");
+                                    }
+                                  },
+                                }}
+                              />
+                              <CircleMarker
+                                center={[
+                                  currentCoordinate.lat,
+                                  currentCoordinate.lng,
+                                ]}
+                                radius={10}
+                                pathOptions={{
+                                  color: "#D53D3D",
+                                  fillColor: "#D53D3D",
+                                  fillOpacity: 0.8,
+                                  weight: 2,
+                                }}
                               >
-                                Live position
-                              </Tooltip>
-                            </CircleMarker>
+                                <Tooltip
+                                  direction="top"
+                                  offset={[0, -8]}
+                                  permanent
+                                >
+                                  Live position
+                                </Tooltip>
+                              </CircleMarker>
+                            </>
                           )}
 
                         <FitMapToRoute points={mapPoints} />
@@ -633,72 +713,102 @@ const TrackingPage = () => {
                       )}
 
                       {isMapFullscreen && trackingData && (
-                        <div className="absolute top-4 right-4 w-[min(92vw,380px)] max-h-[calc(100%-2rem)] overflow-y-auto bg-white/95 backdrop-blur border border-foreground/10 p-4 shadow-xl z-[500]">
-                          <div className="mb-4 pb-3 border-b border-foreground/10">
-                            <h4 className="font-['Sora'] font-semibold text-base mb-2">
-                              Shipment Status
-                            </h4>
-                            <div className="flex items-center gap-2">
-                              {trackingData.status === "Delivered" ? (
-                                <CheckCircle className="w-5 h-5 text-green-600" />
-                              ) : (
-                                <Truck className="w-5 h-5 text-[#D53D3D]" />
-                              )}
-                              <p
-                                className={`font-medium ${
-                                  trackingData.status === "Delivered"
-                                    ? "text-green-600"
-                                    : "text-[#D53D3D]"
-                                }`}
+                        <div className="absolute bottom-3 left-3 right-3 sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto sm:w-[min(92vw,380px)] bg-white/95 backdrop-blur border border-foreground/10 shadow-xl z-[500]">
+                          <div className="p-3 sm:p-4 border-b border-foreground/10">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <h4 className="font-['Sora'] font-semibold text-sm sm:text-base mb-2">
+                                  Shipment Status
+                                </h4>
+                                <div className="flex items-center gap-2">
+                                  {trackingData.status === "Delivered" ? (
+                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                  ) : (
+                                    <Truck className="w-5 h-5 text-[#D53D3D]" />
+                                  )}
+                                  <p
+                                    className={`font-medium text-sm sm:text-base ${
+                                      trackingData.status === "Delivered"
+                                        ? "text-green-600"
+                                        : "text-[#D53D3D]"
+                                    }`}
+                                  >
+                                    {trackingData.status}
+                                  </p>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2 pr-2">
+                                  {trackingData.origin} →{" "}
+                                  {trackingData.destination}
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setIsFullscreenPanelCollapsed(
+                                    (previous) => !previous,
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs border border-foreground/15 hover:bg-foreground/5 transition-colors"
                               >
-                                {trackingData.status}
-                              </p>
+                                {isFullscreenPanelCollapsed ? (
+                                  <>
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                    Expand
+                                  </>
+                                ) : (
+                                  <>
+                                    <Minimize2 className="w-3.5 h-3.5" />
+                                    Collapse
+                                  </>
+                                )}
+                              </button>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {trackingData.origin} → {trackingData.destination}
-                            </p>
                           </div>
 
-                          <div>
-                            <h4 className="font-['Sora'] font-semibold text-base mb-3">
-                              Shipment History
-                            </h4>
-                            <div className="space-y-4">
-                              {trackingData.events.map((event, index) => (
-                                <div key={index} className="flex gap-3">
-                                  <div className="flex flex-col items-center">
-                                    <div
-                                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                        event.completed
-                                          ? "bg-[#D53D3D]"
-                                          : "bg-foreground/10"
-                                      }`}
-                                    >
-                                      {event.completed ? (
-                                        <CheckCircle className="w-3.5 h-3.5 text-white" />
-                                      ) : (
-                                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                          {!isFullscreenPanelCollapsed && (
+                            <div className="p-3 sm:p-4 max-h-[36vh] sm:max-h-[calc(100vh-13rem)] overflow-y-auto">
+                              <h4 className="font-['Sora'] font-semibold text-sm sm:text-base mb-3">
+                                Shipment History
+                              </h4>
+                              <div className="space-y-3 sm:space-y-4">
+                                {trackingData.events.map((event, index) => (
+                                  <div key={index} className="flex gap-3">
+                                    <div className="flex flex-col items-center">
+                                      <div
+                                        className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                          event.completed
+                                            ? "bg-[#D53D3D]"
+                                            : "bg-foreground/10"
+                                        }`}
+                                      >
+                                        {event.completed ? (
+                                          <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                        ) : (
+                                          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                                        )}
+                                      </div>
+                                      {index <
+                                        trackingData.events.length - 1 && (
+                                        <div className="w-0.5 h-full bg-foreground/10 mt-1" />
                                       )}
                                     </div>
-                                    {index < trackingData.events.length - 1 && (
-                                      <div className="w-0.5 h-full bg-foreground/10 mt-1" />
-                                    )}
+                                    <div className="flex-1 pb-3 sm:pb-4">
+                                      <p className="text-sm font-medium">
+                                        {event.status}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {event.location}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {event.date} at {event.time}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="flex-1 pb-4">
-                                    <p className="text-sm font-medium">
-                                      {event.status}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {event.location}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                      {event.date} at {event.time}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )}
                     </div>
