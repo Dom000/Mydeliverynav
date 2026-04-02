@@ -39,7 +39,6 @@ export default function VerifyOtpPage() {
       });
 
       localStorage.removeItem("pendingOtpEmail");
-      localStorage.setItem("userToken", "authenticated");
       localStorage.setItem("userEmail", decodedEmail);
       navigate("/user/packages");
     } catch (mutationError) {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Package, Truck, User, LogOut, Menu, X } from "lucide-react";
+import { logoutAuth } from "@/apis/auth";
 
 export default function UserLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,10 +18,7 @@ export default function UserLayout() {
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("pendingOtpEmail");
-    localStorage.removeItem("pendingOtpCode");
+    logoutAuth();
     navigate("/signin");
   };
 
@@ -59,9 +57,9 @@ export default function UserLayout() {
                   navigate(item.path);
                   setSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors ${
                   isActive(item.path)
-                    ? "bg-red-600 text-white"
+                    ? "bg-red-600/20 text-white"
                     : "hover:bg-slate-800 text-slate-300"
                 }`}
               >

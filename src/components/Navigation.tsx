@@ -20,7 +20,7 @@ const Navigation = () => {
     { path: "/", label: "Home" },
     { path: "/tracking", label: "Tracking" },
     { path: "/about", label: "About" },
-    { path: "/register", label: "Register" },
+    { path: "/signin", label: "Sign In" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -64,12 +64,7 @@ const Navigation = () => {
                   )}
                 </Link>
               ))}
-              <Link
-                to="/admin/login"
-                className="text-xs font-medium text-foreground/60 hover:text-[#D53D3D] transition-colors"
-              >
-                Admin
-              </Link>
+
               <Link to="/tracking" className="btn-primary ml-4">
                 Track Package
               </Link>

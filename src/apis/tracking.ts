@@ -42,7 +42,7 @@ export type TrackingRecord = {
   destination: string;
   estimatedDelivery: string;
   weight: string;
-  dimensions: string;
+  description: string;
   events: TrackingEvent[];
   coordinates: { lat: number; lng: number }[];
   route: TrackingRoute;
@@ -200,7 +200,7 @@ function mapTrackingRecord(input: BackendTrackingPackage): TrackingRecord {
     destination: route?.destination ?? "Unknown",
     estimatedDelivery,
     weight: `${Number(input.weight || 0)} kg`,
-    dimensions: input.content || "Not specified",
+    description: input.content || "Not specified",
     events: mapEvents(input),
     coordinates: mappedRoutePoints.map((point) => point.coords),
     route: {

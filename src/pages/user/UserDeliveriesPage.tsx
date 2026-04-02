@@ -1,21 +1,41 @@
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useUserDeliveriesQuery } from "@/apis/users";
 
-const myDeliveries = [
-  {
-    id: "DEL-001",
-    origin: "Book Depot",
-    destination: "Customer Home",
-    status: "IN_TRANSIT",
-  },
-  {
-    id: "DEL-002",
-    origin: "Warehouse A",
-    destination: "City Hub",
-    status: "DELIVERED",
-  },
-];
+function isTrackable(status: string) {
+  return ["PENDING", "IN_TRANSIT", "OBSTRUCTED"].includes(status);
+}
+
+function getDeliveryStatusBadgeClass(status?: string) {
+  switch ((status ?? "").toUpperCase()) {
+    case "DELIVERED":
+      return "bg-green-900/50 text-green-300 border-green-700";
+    case "IN_TRANSIT":
+      return "bg-blue-900/50 text-blue-300 border-blue-700";
+    case "OBSTRUCTED":
+    case "INTERRUPTED":
+      return "bg-amber-900/50 text-amber-300 border-amber-700";
+    case "PENDING":
+      return "bg-slate-800 text-slate-200 border-slate-700";
+    default:
+      return "bg-slate-800 text-slate-200 border-slate-700";
+  }
+}
+
+function formatStatusLabel(status?: string) {
+  if (!status) return "--";
+  return status.replaceAll("_", " ");
+}
 
 export default function UserDeliveriesPage() {
+  const {
+    data: myDeliveries = [],
+    isLoading,
+    isError,
+  } = useUserDeliveriesQuery();
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
@@ -26,6 +46,13 @@ export default function UserDeliveriesPage() {
           Track your deliveries and their current statuses.
         </p>
       </div>
+
+      {isLoading && (
+        <p className="text-slate-400 text-sm">Loading deliveries...</p>
+      )}
+      {isError && (
+        <p className="text-red-400 text-sm">Failed to load deliveries.</p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {myDeliveries.map((delivery) => (
@@ -38,16 +65,49 @@ export default function UserDeliveriesPage() {
             <CardContent className="space-y-2 text-sm">
               <p className="text-slate-300">
                 <span className="text-slate-400">Origin:</span>{" "}
-                {delivery.origin}
+                {delivery.route?.origin ?? "--"}
               </p>
               <p className="text-slate-300">
                 <span className="text-slate-400">Destination:</span>{" "}
-                {delivery.destination}
+                {delivery.route?.destination ?? "--"}
               </p>
               <p className="text-slate-300">
                 <span className="text-slate-400">Status:</span>{" "}
-                {delivery.status}
+                <Badge
+                  variant="secondary"
+                  className={getDeliveryStatusBadgeClass(delivery.status)}
+                >
+                  {formatStatusLabel(delivery.status)}
+                </Badge>
               </p>
+
+              <div className="flex space-x-5">
+                {delivery.package?.id && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                  >
+                    <Link
+                      to={`/user/packages/${encodeURIComponent(delivery.package.id)}`}
+                    >
+                      View Details
+                    </Link>
+                  </Button>
+                )}
+                {delivery.package?.id && isTrackable(delivery.status) && (
+                  <Button
+                    asChild
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Link
+                      to={`/tracking?number=${encodeURIComponent(delivery.package.id)}`}
+                    >
+                      Track Delivery
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}

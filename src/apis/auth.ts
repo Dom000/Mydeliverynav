@@ -97,6 +97,7 @@ export function logoutAuth() {
   localStorage.removeItem("adminEmail");
   localStorage.removeItem("userEmail");
   localStorage.removeItem("pendingOtpEmail");
+  localStorage.removeItem("pendingOtpCode");
 }
 
 export const authQueryKeys = {

@@ -117,6 +117,20 @@ function haversineDistanceKm(from: LatLngTuple, to: LatLngTuple) {
   return earthRadiusKm * centralAngle;
 }
 
+function maskDescription(value?: string) {
+  const input = (value ?? "").trim();
+  if (!input) return "--";
+  if (input.length <= 4) return "•".repeat(input.length);
+
+  const visibleStart = input.slice(0, 2);
+  const visibleEnd = input.slice(-2);
+  const masked = "•"
+    .repeat(Math.max(2, input.length - 4))
+    .replace(/(.{8})/g, "$1\u200B");
+
+  return `${visibleStart}${masked}${visibleEnd}`;
+}
+
 const TrackingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [trackingNumber, setTrackingNumber] = useState(
@@ -461,10 +475,10 @@ const TrackingPage = () => {
                         <Box className="w-5 h-5 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="text-sm text-muted-foreground">
-                            Dimensions
+                            Description
                           </p>
-                          <p className="font-medium">
-                            {trackingData.dimensions}
+                          <p className="font-medium text-wrap">
+                            {maskDescription(trackingData.description)}
                           </p>
                         </div>
                       </div>
@@ -748,7 +762,7 @@ const TrackingPage = () => {
                                       <p className="text-xs text-muted-foreground">
                                         {event.location}
                                       </p>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                      <p className="font-medium break-words whitespace-normal leading-relaxed">
                                         {event.date} at {event.time}
                                       </p>
                                     </div>

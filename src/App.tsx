@@ -28,6 +28,7 @@ import VerifyOtpPage from "./pages/VerifyOtpPage";
 import UserPackagesPage from "./pages/user/UserPackagesPage";
 import UserDeliveriesPage from "./pages/user/UserDeliveriesPage";
 import UserAccountPage from "./pages/user/UserAccountPage";
+import UserPackageDetailsPage from "@/pages/user/UserPackageDetailsPage";
 import {
   getPostAuthRedirectPath,
   isAdminAuthenticated,
@@ -112,6 +113,10 @@ function App() {
             <Route path="/user/*" element={<UserLayout />}>
               <Route index element={<Navigate to="packages" replace />} />
               <Route path="packages" element={<UserPackagesPage />} />
+              <Route
+                path="packages/:packageId"
+                element={<UserPackageDetailsPage />}
+              />
               <Route path="deliveries" element={<UserDeliveriesPage />} />
               <Route path="account" element={<UserAccountPage />} />
             </Route>

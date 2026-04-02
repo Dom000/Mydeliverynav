@@ -1,11 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  useUserProfileQuery,
+  useUserShippingAddressesQuery,
+  useSaveUserAccountMutation,
+} from "@/apis/users";
 
-type ShippingAddress = {
+type ShippingAddressForm = {
   id: string;
   userId: string;
   label: string;
@@ -21,24 +26,62 @@ type ShippingAddress = {
 
 export default function UserAccountPage() {
   const email = useMemo(() => localStorage.getItem("userEmail") ?? "", []);
-  const [name, setName] = useState("Reader User");
-  const [phoneNumber, setPhoneNumber] = useState("+1 555 100 1000");
-  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
-    id: "demo-address-1",
-    userId: "demo-user-1",
-    label: "Home",
-    address: "123 Reader Street",
-    default: true,
-    city: "New York",
-    state: "NY",
-    zip: "10001",
-    country: "United States",
-    phone1: "+1 555 100 1000",
+  const { data: profile, isLoading: isProfileLoading } =
+    useUserProfileQuery(true);
+  const { data: shippingAddressesData, isLoading: isAddressesLoading } =
+    useUserShippingAddressesQuery(true);
+  const saveUserAccountMutation = useSaveUserAccountMutation();
+
+  const shippingAddresses = useMemo(
+    () => (Array.isArray(shippingAddressesData) ? shippingAddressesData : []),
+    [shippingAddressesData],
+  );
+
+  const [name, setName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddressForm>({
+    id: "",
+    userId: "",
+    label: "",
+    address: "",
+    default: false,
+    city: "",
+    state: "",
+    zip: "",
+    country: "",
+    phone1: "",
     phone2: "",
   });
 
+  useEffect(() => {
+    if (!profile) return;
+
+    const fallbackEmail = profile.email || email || "user@example.com";
+    setName(profile.name || fallbackEmail.split("@")[0]);
+    const primaryAddress =
+      shippingAddresses.find((address) => address.default) ??
+      shippingAddresses[0];
+
+    if (primaryAddress) {
+      setShippingAddress({
+        id: primaryAddress.id,
+        userId: primaryAddress.userId,
+        label: primaryAddress.label,
+        address: primaryAddress.address,
+        default: primaryAddress.default,
+        city: primaryAddress.city,
+        state: primaryAddress.state,
+        zip: primaryAddress.zip,
+        country: primaryAddress.country,
+        phone1: primaryAddress.phone1,
+        phone2: primaryAddress.phone2 ?? "",
+      });
+      setPhoneNumber(primaryAddress.phone1 || "");
+    }
+  }, [profile, shippingAddresses]);
+
   const updateAddress = (
-    key: keyof ShippingAddress,
+    key: keyof ShippingAddressForm,
     value: string | boolean,
   ) => {
     setShippingAddress((previous) => ({
@@ -47,16 +90,30 @@ export default function UserAccountPage() {
     }));
   };
 
-  const handleSave = () => {
-    const payload = {
-      name,
-      email,
-      phoneNumber,
-      shippingAddress,
-    };
+  const handleSave = async () => {
+    try {
+      await saveUserAccountMutation.mutateAsync({
+        profile: { name },
+        shippingAddress: {
+          id: shippingAddress.id?.startsWith("demo-")
+            ? undefined
+            : shippingAddress.id,
+          label: shippingAddress.label,
+          address: shippingAddress.address,
+          default: shippingAddress.default,
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          zip: shippingAddress.zip,
+          country: shippingAddress.country,
+          phone1: phoneNumber,
+          phone2: shippingAddress.phone2 ?? null,
+        },
+      });
 
-    console.log("User account payload", payload);
-    toast.success("Account details saved (demo). Check console for payload.");
+      toast.success("Account details saved.");
+    } catch {
+      toast.error("Failed to save account details.");
+    }
   };
 
   return (
@@ -77,6 +134,9 @@ export default function UserAccountPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {(isProfileLoading || isAddressesLoading) && (
+            <p className="text-slate-400 text-sm">Loading account data...</p>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="text-slate-300">User Name</Label>
@@ -89,7 +149,7 @@ export default function UserAccountPage() {
             <div className="space-y-2">
               <Label className="text-slate-300">Email</Label>
               <Input
-                value={email}
+                value={profile?.email ?? email}
                 readOnly
                 className="bg-slate-800 border-slate-700 text-slate-300"
               />
@@ -117,7 +177,7 @@ export default function UserAccountPage() {
             <div className="space-y-2">
               <Label className="text-slate-300">Label</Label>
               <Input
-                value={shippingAddress.label}
+                value={shippingAddress.label || ""}
                 onChange={(event) => updateAddress("label", event.target.value)}
                 className="bg-slate-800 border-slate-700 text-white"
               />
@@ -125,7 +185,7 @@ export default function UserAccountPage() {
             <div className="space-y-2">
               <Label className="text-slate-300">Primary Phone (phone1)</Label>
               <Input
-                value={shippingAddress.phone1}
+                value={shippingAddress.phone1 || ""}
                 onChange={(event) =>
                   updateAddress("phone1", event.target.value)
                 }
@@ -137,7 +197,7 @@ export default function UserAccountPage() {
           <div className="space-y-2">
             <Label className="text-slate-300">Address</Label>
             <Input
-              value={shippingAddress.address}
+              value={shippingAddress.address || ""}
               onChange={(event) => updateAddress("address", event.target.value)}
               className="bg-slate-800 border-slate-700 text-white"
             />
@@ -147,7 +207,7 @@ export default function UserAccountPage() {
             <div className="space-y-2">
               <Label className="text-slate-300">City</Label>
               <Input
-                value={shippingAddress.city}
+                value={shippingAddress.city || ""}
                 onChange={(event) => updateAddress("city", event.target.value)}
                 className="bg-slate-800 border-slate-700 text-white"
               />
@@ -155,7 +215,7 @@ export default function UserAccountPage() {
             <div className="space-y-2">
               <Label className="text-slate-300">State</Label>
               <Input
-                value={shippingAddress.state}
+                value={shippingAddress.state || ""}
                 onChange={(event) => updateAddress("state", event.target.value)}
                 className="bg-slate-800 border-slate-700 text-white"
               />
@@ -163,7 +223,7 @@ export default function UserAccountPage() {
             <div className="space-y-2">
               <Label className="text-slate-300">ZIP</Label>
               <Input
-                value={shippingAddress.zip}
+                value={shippingAddress.zip || ""}
                 onChange={(event) => updateAddress("zip", event.target.value)}
                 className="bg-slate-800 border-slate-700 text-white"
               />
@@ -171,7 +231,7 @@ export default function UserAccountPage() {
             <div className="space-y-2">
               <Label className="text-slate-300">Country</Label>
               <Input
-                value={shippingAddress.country}
+                value={shippingAddress.country || ""}
                 onChange={(event) =>
                   updateAddress("country", event.target.value)
                 }
@@ -206,9 +266,10 @@ export default function UserAccountPage() {
 
           <Button
             onClick={handleSave}
+            disabled={saveUserAccountMutation.isPending}
             className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
           >
-            Save Account
+            {saveUserAccountMutation.isPending ? "Saving..." : "Save Account"}
           </Button>
         </CardContent>
       </Card>
