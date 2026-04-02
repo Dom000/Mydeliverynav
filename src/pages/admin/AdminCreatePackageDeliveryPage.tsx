@@ -15,6 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Trash2, Play, Square, Maximize2, Minimize2 } from "lucide-react";
+import { useCreatePackageMutation } from "@/apis/packages";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
+import { toast } from "sonner";
 
 type RoutePoint = {
   label: string;
@@ -163,6 +166,7 @@ export default function AdminCreatePackageDeliveryPage() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [activePointIndex, setActivePointIndex] = useState(0);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const createPackageMutation = useCreatePackageMutation();
 
   const distance = useMemo(() => estimateDistanceKm(points), [points]);
   const polylinePositions = points.map((point) => point.coords);
@@ -327,28 +331,13 @@ export default function AdminCreatePackageDeliveryPage() {
     );
   };
 
-  const handleSubmit = () => {
-    const formData = new FormData();
-    formData.append("name", payload.name);
-    formData.append("weight", String(payload.weight));
-    formData.append("content", payload.content);
-    formData.append("ownerEmail", payload.ownerEmail);
-    formData.append("description", payload.description);
-    formData.append("status", payload.status);
-    formData.append("route", JSON.stringify(payload.route));
-
-    payload.images.forEach((file) => {
-      formData.append("images", file);
-    });
-
-    console.log("Create package payload", payload);
-    console.log("Create package payload preview", payloadPreview);
-    console.log("FormData ready with image files", {
-      imageCount: payload.images.length,
-    });
-    alert(
-      "Package + delivery route payload ready with image files. Check console output.",
-    );
+  const handleSubmit = async () => {
+    try {
+      await createPackageMutation.mutateAsync(payload);
+      toast.success("Package delivery created successfully.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Failed to create package delivery."));
+    }
   };
 
   useEffect(() => {
@@ -805,9 +794,12 @@ export default function AdminCreatePackageDeliveryPage() {
             <Button
               type="button"
               onClick={handleSubmit}
+              disabled={createPackageMutation.isPending}
               className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
             >
-              Create Package Delivery
+              {createPackageMutation.isPending
+                ? "Creating Package Delivery..."
+                : "Create Package Delivery"}
             </Button>
           </div>
         </CardContent>

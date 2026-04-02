@@ -25,6 +25,8 @@ import {
   Minimize2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTrackingQuery } from "@/apis/tracking";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
 const trackingAnimationStyles = `
   @keyframes ping-pulse {
@@ -57,23 +59,6 @@ const trackingAnimationStyles = `
     animation: ping-pulse 2s infinite;
   }
 `;
-
-type TrackingRecord = {
-  status: string;
-  origin: string;
-  destination: string;
-  estimatedDelivery: string;
-  weight: string;
-  dimensions: string;
-  events: {
-    date: string;
-    time: string;
-    location: string;
-    status: string;
-    completed: boolean;
-  }[];
-  coordinates: { lat: number; lng: number }[];
-};
 
 const FitMapToRoute = ({ points }: { points: LatLngTuple[] }) => {
   const map = useMap();
@@ -109,110 +94,55 @@ const InvalidateMapSize = ({ active }: { active: boolean }) => {
   return null;
 };
 
-// Mock tracking data
-const mockTrackingData: Record<string, TrackingRecord> = {
-  EW123456789: {
-    status: "In Transit",
-    origin: "New York, NY",
-    destination: "Los Angeles, CA",
-    estimatedDelivery: "Mar 20, 2026",
-    weight: "2.5 lbs",
-    dimensions: "12 x 8 x 6 in",
-    events: [
-      {
-        date: "Mar 18, 2026",
-        time: "08:30 AM",
-        location: "Chicago, IL",
-        status: "Arrived at sorting facility",
-        completed: true,
-      },
-      {
-        date: "Mar 17, 2026",
-        time: "11:45 PM",
-        location: "Indianapolis, IN",
-        status: "Departed facility",
-        completed: true,
-      },
-      {
-        date: "Mar 17, 2026",
-        time: "04:20 PM",
-        location: "Indianapolis, IN",
-        status: "Arrived at facility",
-        completed: true,
-      },
-      {
-        date: "Mar 16, 2026",
-        time: "09:15 AM",
-        location: "New York, NY",
-        status: "Picked up",
-        completed: true,
-      },
-    ],
-    coordinates: [
-      { lat: 40.7128, lng: -74.006 },
-      { lat: 39.7684, lng: -86.1581 },
-      { lat: 41.8781, lng: -87.6298 },
-      { lat: 34.0522, lng: -118.2437 },
-    ],
-  },
-  EW987654321: {
-    status: "Delivered",
-    origin: "Miami, FL",
-    destination: "Seattle, WA",
-    estimatedDelivery: "Delivered on Mar 15, 2026",
-    weight: "5.0 lbs",
-    dimensions: "15 x 10 x 8 in",
-    events: [
-      {
-        date: "Mar 15, 2026",
-        time: "02:30 PM",
-        location: "Seattle, WA",
-        status: "Delivered",
-        completed: true,
-      },
-      {
-        date: "Mar 15, 2026",
-        time: "08:00 AM",
-        location: "Seattle, WA",
-        status: "Out for delivery",
-        completed: true,
-      },
-      {
-        date: "Mar 14, 2026",
-        time: "06:45 PM",
-        location: "Seattle, WA",
-        status: "Arrived at facility",
-        completed: true,
-      },
-      {
-        date: "Mar 12, 2026",
-        time: "10:30 AM",
-        location: "Miami, FL",
-        status: "Picked up",
-        completed: true,
-      },
-    ],
-    coordinates: [
-      { lat: 25.7617, lng: -80.1918 },
-      { lat: 47.6062, lng: -122.3321 },
-    ],
-  },
-};
+function haversineDistanceKm(from: LatLngTuple, to: LatLngTuple) {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+
+  const [lat1, lon1] = from;
+  const [lat2, lon2] = to;
+
+  const earthRadiusKm = 6371;
+  const deltaLat = toRad(lat2 - lat1);
+  const deltaLon = toRad(lon2 - lon1);
+
+  const haversine =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(deltaLon / 2) *
+      Math.sin(deltaLon / 2);
+
+  const centralAngle =
+    2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+
+  return earthRadiusKm * centralAngle;
+}
 
 const TrackingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [trackingNumber, setTrackingNumber] = useState(
     searchParams.get("number") || "",
   );
-  const [trackingData, setTrackingData] = useState<TrackingRecord | null>(null);
+  const trackingNumberFromUrl = (searchParams.get("number") || "").trim();
+  const normalizedTrackingNumber = trackingNumberFromUrl.toUpperCase();
+
+  const {
+    data: trackingData,
+    isFetching,
+    isLoading,
+    isError,
+    error: trackingError,
+  } = useTrackingQuery(
+    normalizedTrackingNumber,
+    Boolean(normalizedTrackingNumber),
+  );
+
   const [routeCoordinates, setRouteCoordinates] = useState<LatLngTuple[]>([]);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
-  const [isSearching, setIsSearching] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [isFullscreenPanelCollapsed, setIsFullscreenPanelCollapsed] =
     useState(false);
-  const [error, setError] = useState("");
+  const [inputError, setInputError] = useState("");
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -227,13 +157,12 @@ const TrackingPage = () => {
     const styleTag = document.createElement("style");
     styleTag.innerHTML = trackingAnimationStyles;
     document.head.appendChild(styleTag);
-
-    // If tracking number in URL, search automatically
-    const urlNumber = searchParams.get("number");
-    if (urlNumber) {
-      handleTrack(urlNumber);
-    }
   }, []);
+
+  useEffect(() => {
+    if (!trackingNumberFromUrl) return;
+    setTrackingNumber(trackingNumberFromUrl.toUpperCase());
+  }, [trackingNumberFromUrl]);
 
   useEffect(() => {
     if (!trackingData) {
@@ -248,6 +177,18 @@ const TrackingPage = () => {
     const fallbackRoute = trackingData.coordinates.map(
       (point): LatLngTuple => [point.lat, point.lng],
     );
+
+    const hasLongDistanceLeg = fallbackRoute.some((point, index) => {
+      if (index === 0) return false;
+      const previousPoint = fallbackRoute[index - 1];
+      return haversineDistanceKm(previousPoint, point) > 1200;
+    });
+
+    if (hasLongDistanceLeg) {
+      setRouteCoordinates(fallbackRoute);
+      setIsRouteLoading(false);
+      return;
+    }
 
     if (trackingData.coordinates.length < 2) {
       setRouteCoordinates(fallbackRoute);
@@ -298,6 +239,7 @@ const TrackingPage = () => {
 
   useEffect(() => {
     if (!trackingData || trackingData.status !== "In Transit") return;
+    if (trackingData.route.currentPoint) return;
     if (trackingData.coordinates.length <= 1) return;
 
     const timer = window.setInterval(() => {
@@ -340,25 +282,12 @@ const TrackingPage = () => {
 
   const handleTrack = (number: string = trackingNumber) => {
     if (!number.trim()) {
-      setError("Please enter a tracking number");
+      setInputError("Please enter a tracking number");
       return;
     }
 
-    setIsSearching(true);
-    setError("");
-
-    // Simulate API call
-    setTimeout(() => {
-      const data = mockTrackingData[number.toUpperCase()];
-      if (data) {
-        setTrackingData(data);
-        setSearchParams({ number: number.toUpperCase() });
-      } else {
-        setError("Tracking number not found. Try EW123456789 or EW987654321");
-        setTrackingData(null);
-      }
-      setIsSearching(false);
-    }, 800);
+    setInputError("");
+    setSearchParams({ number: number.trim().toUpperCase() });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -367,15 +296,34 @@ const TrackingPage = () => {
   };
 
   const stopPoints = trackingData?.coordinates ?? [];
+  const currentPointFromRoute = trackingData?.route.currentPoint;
+  const currentPointFromRouteIndex = Math.max(
+    0,
+    Number(currentPointFromRoute?.indexFrom ?? 0),
+  );
   const currentCoordinate =
-    stopPoints.length > 0
-      ? stopPoints[Math.min(currentPointIndex, stopPoints.length - 1)]
-      : null;
+    currentPointFromRoute?.coords ??
+    (stopPoints.length > 0
+      ? stopPoints[
+          Math.min(
+            currentPointFromRoute
+              ? currentPointFromRouteIndex
+              : currentPointIndex,
+            stopPoints.length - 1,
+          )
+        ]
+      : null);
   const mapPoints =
     routeCoordinates.length > 0
       ? routeCoordinates
       : stopPoints.map((point): LatLngTuple => [point.lat, point.lng]);
   const mapCenter: LatLngTuple = mapPoints[0] ?? [39.5, -98.35];
+  const error =
+    inputError ||
+    (isError
+      ? getApiErrorMessage(trackingError, "Tracking number not found.")
+      : "");
+  const isSearching = isLoading || isFetching;
 
   return (
     <div className="min-h-screen bg-[#F6F6F2] pt-20">
@@ -409,7 +357,7 @@ const TrackingPage = () => {
                   type="text"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="Enter tracking number (e.g., EW123456789)"
+                  placeholder="Enter tracking number (e.g., package ID)"
                   className="w-full px-5 py-4 bg-white border border-foreground/10 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#D53D3D]/30"
                 />
               </div>
@@ -774,7 +722,7 @@ const TrackingPage = () => {
                               <div className="space-y-3 sm:space-y-4">
                                 {trackingData.events.map((event, index) => (
                                   <div key={index} className="flex gap-3">
-                                    <div className="flex flex-col items-center">
+                                    <div className="relative flex w-6 justify-center shrink-0">
                                       <div
                                         className={`w-6 h-6 rounded-full flex items-center justify-center ${
                                           event.completed
@@ -790,7 +738,7 @@ const TrackingPage = () => {
                                       </div>
                                       {index <
                                         trackingData.events.length - 1 && (
-                                        <div className="w-0.5 h-full bg-foreground/10 mt-1" />
+                                        <div className="absolute top-7 bottom-0 w-0.5 bg-foreground/10" />
                                       )}
                                     </div>
                                     <div className="flex-1 pb-3 sm:pb-4">
@@ -823,7 +771,7 @@ const TrackingPage = () => {
                     <div className="space-y-6">
                       {trackingData.events.map((event, index) => (
                         <div key={index} className="flex gap-4">
-                          <div className="flex flex-col items-center">
+                          <div className="relative flex w-8 justify-center shrink-0">
                             <div
                               className={`w-8 h-8 rounded-full flex items-center justify-center ${
                                 event.completed
@@ -838,7 +786,7 @@ const TrackingPage = () => {
                               )}
                             </div>
                             {index < trackingData.events.length - 1 && (
-                              <div className="w-0.5 h-full bg-foreground/10 mt-2" />
+                              <div className="absolute top-10 bottom-0 w-0.5 bg-foreground/10" />
                             )}
                           </div>
                           <div className="flex-1 pb-6">
@@ -862,15 +810,7 @@ const TrackingPage = () => {
             {!trackingData && !error && (
               <div className="mt-12 p-6 bg-white border border-foreground/8">
                 <p className="text-sm text-muted-foreground">
-                  <strong className="text-foreground">Demo:</strong> Try
-                  tracking numbers{" "}
-                  <code className="bg-foreground/5 px-2 py-1 rounded">
-                    EW123456789
-                  </code>{" "}
-                  or{" "}
-                  <code className="bg-foreground/5 px-2 py-1 rounded">
-                    EW987654321
-                  </code>
+                  Enter a package tracking ID to fetch live shipment updates.
                 </p>
               </div>
             )}

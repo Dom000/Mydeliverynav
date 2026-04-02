@@ -66,7 +66,10 @@ export async function verifyOtp(input: VerifyOtpInput) {
 }
 
 export async function loginAdmin(input: LoginAdminInput) {
-  const { data } = await instance.post<AuthTokenResponse>(`${prefix}/login`, input);
+  const { data } = await instance.post<AuthTokenResponse>(
+    `${prefix}/login`,
+    input,
+  );
 
   persistTokens(data);
   return data;
@@ -89,6 +92,11 @@ export async function getProfile() {
 
 export function logoutAuth() {
   clearAuthTokens();
+  localStorage.removeItem("adminToken");
+  localStorage.removeItem("userToken");
+  localStorage.removeItem("adminEmail");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("pendingOtpEmail");
 }
 
 export const authQueryKeys = {

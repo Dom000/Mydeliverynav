@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useVerifyOtpMutation } from "@/apis/auth";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
 export default function VerifyOtpPage() {
   const navigate = useNavigate();
@@ -42,11 +43,9 @@ export default function VerifyOtpPage() {
       localStorage.setItem("userEmail", decodedEmail);
       navigate("/user/packages");
     } catch (mutationError) {
-      const message =
-        mutationError instanceof Error
-          ? mutationError.message
-          : "Invalid OTP. Please try again.";
-      setError(message);
+      setError(
+        getApiErrorMessage(mutationError, "Invalid OTP. Please try again."),
+      );
     }
   };
 

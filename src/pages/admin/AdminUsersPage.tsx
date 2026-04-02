@@ -20,58 +20,7 @@ import {
 } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer } from "recharts";
 import { Users, Package, Truck } from "lucide-react";
-
-// Sample data - replace with API calls
-const sampleUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Main St, New York, NY",
-    country: "United States",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@example.com",
-    phone: "+44 (20) 7946-0958",
-    address: "10 Downing Street, London",
-    country: "United Kingdom",
-  },
-  {
-    id: 3,
-    name: "Carlos Rodriguez",
-    email: "carlos@example.com",
-    phone: "+34 91 2345678",
-    address: "Calle Principal 456, Madrid",
-    country: "Spain",
-  },
-  {
-    id: 4,
-    name: "Maria Garcia",
-    email: "maria@example.com",
-    phone: "+55 11 99876-5432",
-    address: "Avenida Paulista 1000, São Paulo",
-    country: "Brazil",
-  },
-  {
-    id: 5,
-    name: "Ahmed Hassan",
-    email: "ahmed@example.com",
-    phone: "+966 11 4619088",
-    address: "Olaya Street, Riyadh",
-    country: "Saudi Arabia",
-  },
-  {
-    id: 6,
-    name: "Li Wei",
-    email: "li.wei@example.com",
-    phone: "+86 10 1234 5678",
-    address: "Chang'an Avenue, Beijing",
-    country: "China",
-  },
-];
+import { useUsersDashboardQuery } from "@/apis/users";
 
 const chartConfig = {
   users: {
@@ -89,9 +38,12 @@ const chartConfig = {
 };
 
 export default function AdminUsersPage() {
-  const totalUsers = sampleUsers.length;
-  const totalDeliveries = 234;
-  const totalPackages = 456;
+  const { data, isLoading, isError } = useUsersDashboardQuery();
+
+  const users = data?.users ?? [];
+  const totalUsers = data?.totalUsers ?? 0;
+  const totalDeliveries = data?.totalDeliveries ?? 0;
+  const totalPackages = data?.totalPackages ?? 0;
 
   const statsData = [
     { name: "Users", value: totalUsers, fill: "#ef4444" },
@@ -201,6 +153,14 @@ export default function AdminUsersPage() {
                 </PieChart>
               </ResponsiveContainer>
             </ChartContainer>
+            {isLoading && (
+              <p className="mt-2 text-xs text-slate-400">Loading stats...</p>
+            )}
+            {isError && (
+              <p className="mt-2 text-xs text-red-400">
+                Failed to load live statistics.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -215,6 +175,12 @@ export default function AdminUsersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {isLoading && (
+              <p className="text-slate-300 text-sm">Loading users...</p>
+            )}
+            {isError && (
+              <p className="text-red-400 text-sm">Failed to load users.</p>
+            )}
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -237,7 +203,7 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sampleUsers.map((user) => (
+                  {users.map((user) => (
                     <TableRow
                       key={user.id}
                       className="border-slate-700 hover:bg-slate-800/50"
@@ -259,6 +225,13 @@ export default function AdminUsersPage() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {!isLoading && !isError && users.length === 0 && (
+                    <TableRow className="border-slate-700">
+                      <TableCell className="text-slate-400 text-sm" colSpan={5}>
+                        No users available yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -269,7 +242,13 @@ export default function AdminUsersPage() {
       {/* Users Cards - Mobile */}
       <div className="sm:hidden space-y-3">
         <h3 className="text-white font-semibold text-sm px-2">Users List</h3>
-        {sampleUsers.map((user) => (
+        {isLoading && (
+          <p className="text-slate-300 text-sm px-2">Loading users...</p>
+        )}
+        {isError && (
+          <p className="text-red-400 text-sm px-2">Failed to load users.</p>
+        )}
+        {users.map((user) => (
           <Card key={user.id} className="bg-slate-900 border-slate-700">
             <CardContent className="pt-4 space-y-2">
               <div>
@@ -295,6 +274,9 @@ export default function AdminUsersPage() {
             </CardContent>
           </Card>
         ))}
+        {!isLoading && !isError && users.length === 0 && (
+          <p className="text-slate-400 text-sm px-2">No users available yet.</p>
+        )}
       </div>
     </div>
   );

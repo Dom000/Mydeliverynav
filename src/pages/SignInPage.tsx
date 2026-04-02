@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSendOtpMutation } from "@/apis/auth";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
 export default function SignInPage() {
   const navigate = useNavigate();
@@ -28,11 +29,12 @@ export default function SignInPage() {
       localStorage.setItem("pendingOtpEmail", normalizedEmail);
       navigate(`/signin/verify/${encodeURIComponent(normalizedEmail)}`);
     } catch (mutationError) {
-      const message =
-        mutationError instanceof Error
-          ? mutationError.message
-          : "Failed to send OTP. Please try again.";
-      setError(message);
+      setError(
+        getApiErrorMessage(
+          mutationError,
+          "Failed to send OTP. Please try again.",
+        ),
+      );
     }
   };
 

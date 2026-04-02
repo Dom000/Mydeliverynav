@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 type ShippingAddress = {
   id: string;
@@ -55,7 +56,7 @@ export default function UserAccountPage() {
     };
 
     console.log("User account payload", payload);
-    alert("Account details saved (demo). Check console for payload.");
+    toast.success("Account details saved (demo). Check console for payload.");
   };
 
   return (

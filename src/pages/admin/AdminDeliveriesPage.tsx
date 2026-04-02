@@ -14,14 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  useDeliveriesQuery,
+  useUpdatePackageMutation,
+  type PackageStatus,
+} from "@/apis/packages";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { Truck } from "lucide-react";
-
-type PackageStatus =
-  | "PENDING"
-  | "IN_TRANSIT"
-  | "DELIVERED"
-  | "CANCELLED"
-  | "OBSTRUCTED";
+import { toast } from "sonner";
 
 type Delivery = {
   id: string;
@@ -31,6 +31,7 @@ type Delivery = {
   destination: string;
   status: PackageStatus;
   date: string;
+  packageId: string;
 };
 
 const PACKAGE_STATUSES: PackageStatus[] = [
@@ -39,36 +40,6 @@ const PACKAGE_STATUSES: PackageStatus[] = [
   "DELIVERED",
   "CANCELLED",
   "OBSTRUCTED",
-];
-
-const initialDeliveries: Delivery[] = [
-  {
-    id: "DEL001",
-    trackingNumber: "TRK-2024-001",
-    customer: "John Doe",
-    origin: "New York, NY",
-    destination: "Los Angeles, CA",
-    status: "IN_TRANSIT",
-    date: "2024-03-15",
-  },
-  {
-    id: "DEL002",
-    trackingNumber: "TRK-2024-002",
-    customer: "Jane Smith",
-    origin: "London, UK",
-    destination: "Paris, FR",
-    status: "DELIVERED",
-    date: "2024-03-14",
-  },
-  {
-    id: "DEL003",
-    trackingNumber: "TRK-2024-003",
-    customer: "Carlos Rodriguez",
-    origin: "Madrid, ES",
-    destination: "Barcelona, ES",
-    status: "PENDING",
-    date: "2024-03-16",
-  },
 ];
 
 function getStatusClass(status: PackageStatus) {
@@ -84,9 +55,23 @@ function formatStatus(status: PackageStatus) {
 }
 
 export default function AdminDeliveriesPage() {
-  const [deliveries, setDeliveries] = useState<Delivery[]>(initialDeliveries);
+  const { data, isLoading, isError } = useDeliveriesQuery();
+  const updatePackageMutation = useUpdatePackageMutation();
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftStatus, setDraftStatus] = useState<PackageStatus>("PENDING");
+
+  const deliveries: Delivery[] = (data ?? []).map((delivery) => ({
+    id: delivery.id,
+    packageId: delivery.package?.id ?? "",
+    trackingNumber: delivery.package?.id ?? "--",
+    customer:
+      delivery.package?.owner?.name || delivery.package?.owner?.email || "--",
+    origin: "--",
+    destination: delivery.package?.destination ?? "--",
+    status: delivery.status,
+    date: "--",
+  }));
 
   const startEditing = (delivery: Delivery) => {
     setEditingId(delivery.id);
@@ -97,18 +82,26 @@ export default function AdminDeliveriesPage() {
     setEditingId(null);
   };
 
-  const saveStatus = (deliveryId: string) => {
-    setDeliveries((previous) =>
-      previous.map((delivery) =>
-        delivery.id === deliveryId
-          ? {
-              ...delivery,
-              status: draftStatus,
-            }
-          : delivery,
-      ),
+  const saveStatus = async (deliveryId: string) => {
+    const selectedDelivery = deliveries.find(
+      (delivery) => delivery.id === deliveryId,
     );
-    setEditingId(null);
+    if (!selectedDelivery?.packageId) {
+      toast.error("Unable to update this delivery status.");
+      return;
+    }
+
+    try {
+      await updatePackageMutation.mutateAsync({
+        id: selectedDelivery.packageId,
+        input: { status: draftStatus },
+      });
+      setEditingId(null);
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(error, "Failed to update delivery status."),
+      );
+    }
   };
 
   return (
@@ -133,6 +126,12 @@ export default function AdminDeliveriesPage() {
             <CardDescription>All current and past deliveries</CardDescription>
           </CardHeader>
           <CardContent>
+            {isLoading && (
+              <p className="text-slate-300 text-sm">Loading deliveries...</p>
+            )}
+            {isError && (
+              <p className="text-red-400 text-sm">Failed to load deliveries.</p>
+            )}
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -211,9 +210,12 @@ export default function AdminDeliveriesPage() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => saveStatus(delivery.id)}
+                              disabled={updatePackageMutation.isPending}
                               className="px-2 py-1 text-xs rounded bg-emerald-600 text-white hover:bg-emerald-700"
                             >
-                              Save
+                              {updatePackageMutation.isPending
+                                ? "Saving..."
+                                : "Save"}
                             </button>
                             <button
                               onClick={cancelEditing}
@@ -233,6 +235,16 @@ export default function AdminDeliveriesPage() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {!isLoading && !isError && deliveries.length === 0 && (
+                    <TableRow className="border-slate-700">
+                      <TableCell
+                        colSpan={7}
+                        className="text-slate-400 text-center text-sm py-6"
+                      >
+                        No deliveries found.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -245,6 +257,14 @@ export default function AdminDeliveriesPage() {
         <h3 className="text-white font-semibold text-sm px-2">
           Active Deliveries
         </h3>
+        {isLoading && (
+          <p className="text-slate-300 text-sm px-2">Loading deliveries...</p>
+        )}
+        {isError && (
+          <p className="text-red-400 text-sm px-2">
+            Failed to load deliveries.
+          </p>
+        )}
         {deliveries.map((delivery) => (
           <Card key={delivery.id} className="bg-slate-900 border-slate-700">
             <CardContent className="pt-4 space-y-2">
@@ -302,9 +322,10 @@ export default function AdminDeliveriesPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => saveStatus(delivery.id)}
+                      disabled={updatePackageMutation.isPending}
                       className="px-2 py-1 text-xs rounded bg-emerald-600 text-white hover:bg-emerald-700"
                     >
-                      Save
+                      {updatePackageMutation.isPending ? "Saving..." : "Save"}
                     </button>
                     <button
                       onClick={cancelEditing}
@@ -325,6 +346,9 @@ export default function AdminDeliveriesPage() {
             </CardContent>
           </Card>
         ))}
+        {!isLoading && !isError && deliveries.length === 0 && (
+          <p className="text-slate-400 text-sm px-2">No deliveries found.</p>
+        )}
       </div>
     </div>
   );

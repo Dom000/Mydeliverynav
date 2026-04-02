@@ -10,6 +10,7 @@ import {
   Twitter,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 interface ContactSectionProps {
   className?: string;
@@ -91,7 +92,7 @@ const ContactSection = ({ className = "" }: ContactSectionProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(
+    toast.success(
       "Thank you for your inquiry! We will get back to you within one business day.",
     );
     setFormData({ name: "", email: "", company: "", message: "" });

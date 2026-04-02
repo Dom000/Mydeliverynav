@@ -10,6 +10,7 @@ import {
   X,
   MapPinned,
 } from "lucide-react";
+import { logoutAuth } from "@/apis/auth";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -17,8 +18,7 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminEmail");
+    logoutAuth();
     navigate("/admin/login");
   };
 

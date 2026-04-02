@@ -13,6 +13,7 @@ import {
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAdminLoginMutation } from "@/apis/auth";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -36,15 +37,15 @@ export default function AdminLoginPage() {
         password,
       });
 
-      localStorage.setItem("adminToken", "authenticated");
       localStorage.setItem("adminEmail", email.trim().toLowerCase());
       navigate("/admin/dashboard");
     } catch (loginError) {
-      const message =
-        loginError instanceof Error
-          ? loginError.message
-          : "Authentication failed. Please try again.";
-      setError(message);
+      setError(
+        getApiErrorMessage(
+          loginError,
+          "Authentication failed. Please try again.",
+        ),
+      );
     }
   };
 
