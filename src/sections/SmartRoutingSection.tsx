@@ -123,7 +123,7 @@ const SmartRoutingSection = ({ className = "" }: SmartRoutingSectionProps) => {
         {/* Top-left Photo (Driver) */}
         <div className="photo-1 absolute left-0 top-0 w-[62%] h-[46%] overflow-hidden">
           <img
-            src="/collage_driver.jpg"
+            src="/collage_driver.png"
             alt="Delivery Driver"
             className="w-full h-full object-cover"
           />

@@ -11,7 +11,7 @@ const services = [
     icon: Package,
     title: "Parcel Delivery",
     description: "Door-to-door with live tracking and delivery windows.",
-    image: "/services_parcel.jpg",
+    image: "/services_parcel.png",
     cta: "Explore parcel",
   },
   {

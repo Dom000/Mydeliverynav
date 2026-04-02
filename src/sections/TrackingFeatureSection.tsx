@@ -106,7 +106,8 @@ const TrackingFeatureSection = ({
         className="absolute left-[50vw] top-0 w-[50vw] h-full overflow-hidden"
       >
         <img
-          src="/tracking_phone.jpg"
+          src="/tracking_phone.png
+          "
           alt="Real-Time Tracking"
           className="w-full h-full object-cover"
         />

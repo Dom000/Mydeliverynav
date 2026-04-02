@@ -58,7 +58,7 @@ const team = [
   {
     name: "David Park",
     role: "Head of Technology",
-    image: "/collage_driver.jpg",
+    image: "/collage_driver.png",
   },
 ];
 
@@ -174,7 +174,7 @@ const AboutPage = () => {
         <div className="relative bg-[#111111] text-[#F6F6F2] py-20 px-8 overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             <img
-              src="/why_warehouse.jpg"
+              src="/why_warehouse.png"
               alt="Background"
               className="w-full h-full object-cover"
             />

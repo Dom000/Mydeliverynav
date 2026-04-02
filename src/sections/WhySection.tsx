@@ -116,7 +116,7 @@ const WhySection = ({ className = "" }: WhySectionProps) => {
         className="absolute left-[52vw] top-0 w-[48vw] h-full overflow-hidden"
       >
         <img
-          src="/why_warehouse.jpg"
+          src="/why_warehouse.png"
           alt="Mydeliverynav Warehouse"
           className="w-full h-full object-cover"
         />

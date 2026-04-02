@@ -165,7 +165,7 @@ const HeroSection = ({ className = "" }: HeroSectionProps) => {
         className="absolute left-0 top-0 w-[52vw] h-full overflow-hidden"
       >
         <img
-          src="/hero_courier.jpg"
+          src="/hero_courier.png"
           alt="Mydeliverynav Courier"
           className="w-full h-full object-cover"
         />
