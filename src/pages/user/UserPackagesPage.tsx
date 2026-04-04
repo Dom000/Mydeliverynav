@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useUserPackagesQuery } from "@/apis/users";
-import { Badge } from "@/components/ui/badge";
 
 function isTrackable(status: string) {
   return ["PENDING", "IN_TRANSIT"].includes(status);
