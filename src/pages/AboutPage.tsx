@@ -48,17 +48,17 @@ const team = [
   {
     name: "Michael Chen",
     role: "Chief Executive Officer",
-    image: "/safe_worker.jpg",
+    image: "/Michael_Chen.png",
   },
   {
     name: "Sarah Williams",
     role: "Chief Operations Officer",
-    image: "/support_headset.jpg",
+    image: "/Sarah_Williams.png",
   },
   {
     name: "David Park",
     role: "Head of Technology",
-    image: "/collage_driver.png",
+    image: "/David_Park.png",
   },
 ];
 
@@ -412,9 +412,9 @@ const AboutPage = () => {
               logistics needs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="btn-primary">
+              {/* <Link to="/register" className="btn-primary">
                 Create Account
-              </Link>
+              </Link> */}
               <Link to="/tracking" className="btn-secondary">
                 Track a Shipment
               </Link>
