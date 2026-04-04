@@ -223,7 +223,7 @@ const HeroSection = ({ className = "" }: HeroSectionProps) => {
                   className="w-full px-4 py-3 bg-[#F6F6F2] border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#D53D3D]/30"
                 />
               </div>
-              <button type="submit" className="btn-primary px-8">
+              <button type="submit" className="btn-primary px-4">
                 <Search className="w-4 h-4 mr-2" />
                 Track
               </button>

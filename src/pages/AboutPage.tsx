@@ -171,7 +171,7 @@ const AboutPage = () => {
     <div className="min-h-screen bg-[#F6F6F2] pt-20">
       <div className="about-content">
         {/* Hero */}
-        <div className="relative bg-[#111111] text-[#F6F6F2] py-20 px-8 overflow-hidden">
+        <div className="relative bg-[#111111] text-[#F6F6F2] py-20 px-4 overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             <img
               src="/why_warehouse.png"
@@ -198,7 +198,7 @@ const AboutPage = () => {
         </div>
 
         {/* Stats */}
-        <div ref={statsRef} className="py-16 px-8">
+        <div ref={statsRef} className="py-16 px-4">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {stats.map((stat) => (
@@ -218,7 +218,7 @@ const AboutPage = () => {
         </div>
 
         {/* Our Story */}
-        <div className="py-16 px-8 bg-white">
+        <div className="py-16 px-4 bg-white">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
@@ -264,7 +264,7 @@ const AboutPage = () => {
         </div>
 
         {/* Values */}
-        <div ref={valuesRef} className="py-16 px-8">
+        <div ref={valuesRef} className="py-16 px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <span className="eyebrow mb-4 block">Our Values</span>
@@ -294,7 +294,7 @@ const AboutPage = () => {
         </div>
 
         {/* Services Overview */}
-        <div className="py-16 px-8 bg-[#111111] text-[#F6F6F2]">
+        <div className="py-16 px-4 bg-[#111111] text-[#F6F6F2]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <span className="eyebrow mb-4 block text-[#F6F6F2]/60">
@@ -343,7 +343,7 @@ const AboutPage = () => {
         </div>
 
         {/* Timeline */}
-        <div ref={milestonesRef} className="py-16 px-8">
+        <div ref={milestonesRef} className="py-16 px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <span className="eyebrow mb-4 block">Our Journey</span>
@@ -372,7 +372,7 @@ const AboutPage = () => {
         </div>
 
         {/* Team */}
-        <div ref={teamRef} className="py-16 px-8 bg-white">
+        <div ref={teamRef} className="py-16 px-4 bg-white">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <span className="eyebrow mb-4 block">Leadership</span>
@@ -401,7 +401,7 @@ const AboutPage = () => {
         </div>
 
         {/* CTA */}
-        <div className="py-16 px-8">
+        <div className="py-16 px-4">
           <div className="max-w-4xl mx-auto text-center">
             <Shield className="w-12 h-12 text-[#D53D3D] mx-auto mb-6" />
             <h2 className="font-['Sora'] font-bold text-[clamp(24px,2.5vw,36px)] leading-[1.05] mb-4">

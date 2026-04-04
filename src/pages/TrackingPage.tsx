@@ -343,7 +343,7 @@ const TrackingPage = () => {
     <div className="min-h-screen bg-[#F6F6F2] pt-20">
       <div className="tracking-content">
         {/* Header */}
-        <div className="bg-[#111111] text-[#F6F6F2] py-16 px-8">
+        <div className="bg-[#111111] text-[#F6F6F2] py-16 px-4">
           <div className="max-w-6xl mx-auto">
             <Link
               to="/"
@@ -363,7 +363,7 @@ const TrackingPage = () => {
         </div>
 
         {/* Search Section */}
-        <div className="py-12 px-8">
+        <div className="py-12 px-4">
           <div className="max-w-6xl mx-auto">
             <form onSubmit={handleSubmit} className="flex gap-4 max-w-2xl">
               <div className="flex-1 relative">
@@ -378,7 +378,7 @@ const TrackingPage = () => {
               <button
                 type="submit"
                 disabled={isSearching}
-                className="btn-primary px-8 disabled:opacity-50"
+                className="btn-primary px-4 disabled:opacity-50"
               >
                 {isSearching ? (
                   <span className="flex items-center gap-2">

@@ -127,7 +127,7 @@ const RegisterPage = () => {
   if (isSuccess) {
     return (
       <div className="min-h-screen bg-[#F6F6F2] pt-20 flex items-center justify-center">
-        <div className="register-content text-center px-8 max-w-md">
+        <div className="register-content text-center px-4 max-w-md">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
@@ -155,7 +155,7 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-[#F6F6F2] pt-20">
       <div className="register-content">
         {/* Header */}
-        <div className="bg-[#111111] text-[#F6F6F2] py-12 px-8">
+        <div className="bg-[#111111] text-[#F6F6F2] py-12 px-4">
           <div className="max-w-6xl mx-auto">
             <Link
               to="/"
@@ -171,7 +171,7 @@ const RegisterPage = () => {
         </div>
 
         {/* Form Section */}
-        <div className="py-12 px-8">
+        <div className="py-12 px-4">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Form */}

@@ -83,7 +83,7 @@ const ManifestoSection = ({ className = "" }: ManifestoSectionProps) => {
       className={`section-pinned bg-[#111111] ${className}`}
     >
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
         <h2
           ref={headlineRef}
           className="font-['Sora'] font-bold text-[clamp(36px,5vw,72px)] leading-[1.05] text-[#F6F6F2] mb-8 max-w-[78vw]"
@@ -104,7 +104,7 @@ const ManifestoSection = ({ className = "" }: ManifestoSectionProps) => {
         <Link
           ref={ctaRef}
           to="/register"
-          className="btn-primary text-base px-8 py-4"
+          className="btn-primary text-base px-4 py-4"
         >
           Get a quote
         </Link>
