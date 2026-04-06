@@ -23,6 +23,7 @@ import "./App.css";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminPackagesPage from "./pages/admin/AdminPackagesPage";
 import AdminCreatePackageDeliveryPage from "./pages/admin/AdminCreatePackageDeliveryPage";
+import AdminPackageDetailsPage from "./pages/admin/AdminPackageDetailsPage";
 import SignInPage from "./pages/SignInPage";
 import VerifyOtpPage from "./pages/VerifyOtpPage";
 import UserPackagesPage from "./pages/user/UserPackagesPage";
@@ -103,6 +104,10 @@ function App() {
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="deliveries" element={<AdminDeliveriesPage />} />
               <Route path="packages" element={<AdminPackagesPage />} />
+              <Route
+                path="packages/:packageId"
+                element={<AdminPackageDetailsPage />}
+              />
               <Route
                 path="create-package-delivery"
                 element={<AdminCreatePackageDeliveryPage />}

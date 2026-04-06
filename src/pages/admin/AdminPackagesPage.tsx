@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePackagesQuery, type PackageStatus } from "@/apis/packages";
+import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
 
 function formatStatus(status: PackageStatus) {
@@ -90,6 +91,9 @@ export default function AdminPackagesPage() {
                     <TableHead className="text-slate-400 text-xs sm:text-sm">
                       Status
                     </TableHead>
+                    <TableHead className="text-slate-400 text-xs sm:text-sm">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -120,12 +124,20 @@ export default function AdminPackagesPage() {
                           {formatStatus(pkg.status)}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        <Link
+                          to={`/admin/packages/${encodeURIComponent(pkg.id)}`}
+                          className="inline-flex px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
+                        >
+                          View Details
+                        </Link>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {!isLoading && !isError && packages.length === 0 && (
                     <TableRow className="border-slate-700">
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="text-slate-400 text-sm text-center py-6"
                       >
                         No packages yet.
@@ -181,6 +193,15 @@ export default function AdminPackagesPage() {
                 <p className="text-slate-300 text-xs">
                   {formatDate(pkg.createdAt)}
                 </p>
+              </div>
+              <div className="pt-1 space-y-1">
+                <p className="text-slate-400 text-xs">Actions</p>
+                <Link
+                  to={`/admin/packages/${encodeURIComponent(pkg.id)}`}
+                  className="inline-flex w-full justify-center px-3 py-2 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
+                >
+                  View Details
+                </Link>
               </div>
             </CardContent>
           </Card>

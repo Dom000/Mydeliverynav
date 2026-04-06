@@ -19,6 +19,7 @@ import {
   useUpdatePackageMutation,
   type PackageStatus,
 } from "@/apis/packages";
+import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { Truck } from "lucide-react";
 import { toast } from "sonner";
@@ -225,12 +226,22 @@ export default function AdminDeliveriesPage() {
                             </button>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => startEditing(delivery)}
-                            className="px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
-                          >
-                            Edit
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => startEditing(delivery)}
+                              className="px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
+                            >
+                              Edit
+                            </button>
+                            {delivery.packageId && (
+                              <Link
+                                to={`/admin/packages/${encodeURIComponent(delivery.packageId)}`}
+                                className="px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
+                              >
+                                View
+                              </Link>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
@@ -317,30 +328,41 @@ export default function AdminDeliveriesPage() {
                 <p className="text-slate-400 text-xs">Date</p>
                 <p className="text-slate-300 text-xs">{delivery.date}</p>
               </div>
-              <div className="pt-1">
+              <div className="pt-1 space-y-1">
+                <p className="text-slate-400 text-xs">Actions</p>
                 {editingId === delivery.id ? (
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => saveStatus(delivery.id)}
                       disabled={updatePackageMutation.isPending}
-                      className="px-2 py-1 text-xs rounded bg-emerald-600 text-white hover:bg-emerald-700"
+                      className="flex-1 px-3 py-2 text-xs rounded bg-emerald-600 text-white hover:bg-emerald-700"
                     >
                       {updatePackageMutation.isPending ? "Saving..." : "Save"}
                     </button>
                     <button
                       onClick={cancelEditing}
-                      className="px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
+                      className="flex-1 px-3 py-2 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
                     >
                       Cancel
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => startEditing(delivery)}
-                    className="px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
-                  >
-                    Edit Status
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => startEditing(delivery)}
+                      className="flex-1 px-3 py-2 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
+                    >
+                      Edit Status
+                    </button>
+                    {delivery.packageId && (
+                      <Link
+                        to={`/admin/packages/${encodeURIComponent(delivery.packageId)}`}
+                        className="flex-1 px-3 py-2 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800 text-center"
+                      >
+                        View Details
+                      </Link>
+                    )}
+                  </div>
                 )}
               </div>
             </CardContent>
