@@ -42,14 +42,18 @@ export default function AdminPackageDetailsPage() {
 
   const { data: deliveries = [] } = useDeliveriesQuery(Boolean(packageId));
 
-  const linkedDelivery = deliveries.find((item) => item.package?.id === packageId);
+  const linkedDelivery = deliveries.find(
+    (item) => item.package?.id === packageId,
+  );
 
   if (packageLoading) {
     return <p className="text-slate-400 text-sm">Loading package details...</p>;
   }
 
   if (packageError) {
-    return <p className="text-red-400 text-sm">Failed to load package details.</p>;
+    return (
+      <p className="text-red-400 text-sm">Failed to load package details.</p>
+    );
   }
 
   if (!pkg) {
@@ -108,13 +112,16 @@ export default function AdminPackageDetailsPage() {
             <span className="text-slate-400">Weight:</span> {pkg.weight}
           </p>
           <p className="text-slate-300">
-            <span className="text-slate-400">Description:</span> {pkg.description || "--"}
+            <span className="text-slate-400">Description:</span>{" "}
+            {pkg.description || "--"}
           </p>
           <p className="text-slate-300">
-            <span className="text-slate-400">Created:</span> {formatDate(pkg.createdAt)}
+            <span className="text-slate-400">Created:</span>{" "}
+            {formatDate(pkg.createdAt)}
           </p>
           <p className="text-slate-300">
-            <span className="text-slate-400">Updated:</span> {formatDate(pkg.updatedAt)}
+            <span className="text-slate-400">Updated:</span>{" "}
+            {formatDate(pkg.updatedAt)}
           </p>
         </CardContent>
       </Card>
@@ -127,7 +134,8 @@ export default function AdminPackageDetailsPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p className="text-slate-300">
-            <span className="text-slate-400">Delivery ID:</span> {linkedDelivery?.id ?? "--"}
+            <span className="text-slate-400">Delivery ID:</span>{" "}
+            {linkedDelivery?.id ?? "--"}
           </p>
           <p className="text-slate-300">
             <span className="text-slate-400">Delivery Status:</span>{" "}
@@ -177,7 +185,9 @@ export default function AdminPackageDetailsPage() {
               ))}
             </div>
           ) : (
-            <p className="text-slate-400 text-sm">No package images available.</p>
+            <p className="text-slate-400 text-sm">
+              No package images available.
+            </p>
           )}
         </CardContent>
       </Card>
